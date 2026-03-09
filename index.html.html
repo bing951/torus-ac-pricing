@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>特菱冷氣一對多搭配組合報價試算</title>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;margin:40px;background:#f5f6fa}
+h1{color:#c40000}
+select{padding:8px;margin:8px;width:260px}
+.card{background:white;padding:20px;border-radius:10px;max-width:700px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.result{margin-top:20px;font-size:18px}
+</style>
+</head>
+
+<body>
+
+<h1>TORUS 特菱冷氣<br>一對多搭配組合報價試算</h1>
+
+<div class="card">
+
+<label>室外機</label><br>
+<select id="outdoor"></select><br>
+
+<label>室內機1</label><br>
+<select id="indoor1"></select><br>
+
+<label>室內機2</label><br>
+<select id="indoor2"></select><br>
+
+<label>室內機3</label><br>
+<select id="indoor3"></select><br>
+
+<label>室內機4</label><br>
+<select id="indoor4"></select><br>
+
+<div class="result" id="result"></div>
+
+</div>
+
+<script>
+
+let db
+
+fetch('./torus_website_database.json')
+.then(r=>r.json())
+.then(data=>{
+
+db=data
+
+const outdoorSel=document.getElementById("outdoor")
+const indoorModels=data.indoorPrices.map(i=>i.model)
+
+data.outdoorPrices.forEach(o=>{
+let op=document.createElement("option")
+op.value=o.model
+op.text=o.model+" ("+o.netPrice+")"
+outdoorSel.appendChild(op)
+})
+
+function fillIndoor(id){
+let s=document.getElementById(id)
+let blank=document.createElement("option")
+blank.value=""
+blank.text="不選擇"
+s.appendChild(blank)
+
+indoorModels.forEach(m=>{
+let op=document.createElement("option")
+op.value=m
+op.text=m
+s.appendChild(op)
+})
+}
+
+fillIndoor("indoor1")
+fillIndoor("indoor2")
+fillIndoor("indoor3")
+fillIndoor("indoor4")
+
+document.querySelectorAll("select").forEach(s=>{
+s.addEventListener("change",calc)
+})
+
+})
+
+function calc(){
+
+let outdoor=document.getElementById("outdoor").value
+if(!outdoor) return
+
+let indoors=[
+document.getElementById("indoor1").value,
+document.getElementById("indoor2").value,
+document.getElementById("indoor3").value,
+document.getElementById("indoor4").value
+].filter(v=>v)
+
+let outdoorPrice=db.outdoorPrices.find(o=>o.model==outdoor)?.netPrice||0
+
+let indoorTotal=0
+
+indoors.forEach(m=>{
+let item=db.indoorPrices.find(i=>i.model==m)
+if(item) indoorTotal+=item.netPrice
+})
+
+let total=outdoorPrice+indoorTotal
+
+let valid=db.validCombos.some(c=>{
+
+if(c.outdoorModel!==outdoor) return false
+
+let a=[...c.indoors].sort().join(",")
+let b=[...indoors].sort().join(",")
+
+return a===b
+
+})
+
+document.getElementById("result").innerHTML=
+"組合："+indoors.join(" + ")+"<br>"+
+"總價："+total+"<br>"+
+(valid?"合法配法":"非合法配法")
+
+}
+
+</script>
+
+</body>
+</html>
